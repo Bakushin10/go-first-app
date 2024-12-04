@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"flag"
 	"fmt"
+	// "go/printer"
 	"os"
 	"strings"
 	"time"
@@ -39,30 +40,37 @@ func main() {
 	problems := parseLines(lines)
 	fmt.Println(problems)
 
-	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+	answerCh := make(chan string)
+	count := 0
 
-	var count int
-	for i, p := range problems {
-		fmt.Printf("Problem #%d: %s = ", i+1, p.q)
-		answerCh := make(chan string)
-
-		go func() {
+	go func() {
+		for {
 			var answer string
-			fmt.Scanf("%s\n", &answer)
-			answerCh <- answer
-		}()
+			if _, err := fmt.Scanf("%s\n", &answer); err == nil {
+				answerCh <- answer
+			} else {
+				close(answerCh)
+				return
+			}
+		}
+	}()
+
+	for i, p := range problems {
+
+		fmt.Printf("problem #%d %s = ", i+1, p.q)
+		timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
 
 		select {
 		case <-timer.C:
 			fmt.Printf("You scored %d out of %d.\n", count, len(problems))
-			return
+			os.Exit(0) // finish the program
+
 		case answer := <-answerCh:
 			if answer == p.a {
 				count++
 			}
 		}
 
-		fmt.Println("total correct answer is ", count)
 	}
 }
 
