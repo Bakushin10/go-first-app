@@ -7,10 +7,14 @@ import (
 )
 
 // rootCmd is the root command of the CLI application
-var RootCmd = &cobra.Command{
-	Use:   "task",
-	Short: "Task is a CLI task manager",
+var addCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Adds task to your task list",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Welcome to Task CLI! Run your tasks here.")
+		fmt.Println("add called.")
 	},
+}
+
+func init() {
+	RootCmd.AddCommand(addCmd)
 }
