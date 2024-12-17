@@ -19,17 +19,38 @@ func main() {
 	}
 	defer consumer.Close()
 
-	// Subscribe to a topic
-	topic := "test-topic"
-	partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
-	if err != nil {
-		log.Fatal("Error starting partition consumer: ", err)
-	}
-	defer partitionConsumer.Close()
+	subscribedTopics := []string{"topic-subscribed-1", "topic-subscribed-2", "topic-subscribed-3"}
 
-	// Consume messages
+	partitionConsumers := make(map[string]sarama.PartitionConsumer)
+
+	// Subscribe to all topics and create partition consumers
+	for _, topic := range subscribedTopics {
+		// Start consuming partition 0 for each topic
+		partitionConsumer, err := consumer.ConsumePartition(topic, 0, sarama.OffsetNewest)
+		if err != nil {
+			log.Printf("Error starting partition consumer for topic %s: %v\n", topic, err)
+			continue
+		}
+		partitionConsumers[topic] = partitionConsumer
+		fmt.Printf("Started consuming from topic: %s\n", topic)
+		defer partitionConsumer.Close()
+	}
+
 	fmt.Println("Consumer started. Waiting for messages...")
-	for msg := range partitionConsumer.Messages() {
-		fmt.Printf("Received message: %s\n", string(msg.Value))
+
+	messageChannel := make(chan *sarama.ConsumerMessage)
+
+	// Start a goroutine for each partition consumer to read messages concurrently
+	for topic, partitionConsumer := range partitionConsumers {
+		go func(topic string, partitionConsumer sarama.PartitionConsumer) {
+			for msg := range partitionConsumer.Messages() {
+				messageChannel <- msg
+			}
+		}(topic, partitionConsumer)
+	}
+
+	// Consume messages from the channel
+	for msg := range messageChannel {
+		fmt.Printf("Received message from topic %s: %s\n", msg.Topic, string(msg.Value))
 	}
 }

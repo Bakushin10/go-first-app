@@ -21,12 +21,19 @@ func main() {
 	defer producer.Close()
 
 	// Produce messages
-	topic := "test-topic"
-	message := "Hello from Producer!"
+	topic := []string{"topic-subscribed-1", "topic-subscribed-2", "topic-subscribed-3", "topic-not-subscribed"}
+	messages := make(map[string]string)
+	for _, topic := range topic {
+		messages[topic] = fmt.Sprintf("message from %s", topic)
+	}
 
+	i := 0
 	for {
+		selected_topic := topic[i%len(topic)]
+		message := messages[selected_topic]
+
 		msg := &sarama.ProducerMessage{
-			Topic: topic,
+			Topic: selected_topic,
 			Value: sarama.StringEncoder(message),
 		}
 
@@ -35,9 +42,9 @@ func main() {
 		if err != nil {
 			log.Println("Error sending message: ", err)
 		} else {
-			fmt.Println("Message sent:", message)
+			fmt.Println("Message sent: topic:", msg.Topic)
 		}
-
+		i++
 		// Sleep for a while before sending next message
 		time.Sleep(2 * time.Second)
 	}
