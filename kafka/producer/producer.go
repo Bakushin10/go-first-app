@@ -22,6 +22,7 @@ func main() {
 
 	// Produce messages
 	topic := []string{"topic-subscribed-1", "topic-subscribed-2", "topic-subscribed-3", "topic-not-subscribed"}
+	// topic := []string{"topic-subscribed-1"}
 	messages := make(map[string]string)
 	for _, topic := range topic {
 		messages[topic] = fmt.Sprintf("message from %s", topic)
@@ -29,12 +30,14 @@ func main() {
 
 	i := 0
 	for {
+
+		timestamp := time.Now().Format(time.RFC3339)
 		selected_topic := topic[i%len(topic)]
 		message := messages[selected_topic]
 
 		msg := &sarama.ProducerMessage{
 			Topic: selected_topic,
-			Value: sarama.StringEncoder(message),
+			Value: sarama.StringEncoder(message + " " + timestamp),
 		}
 
 		// Send message to Kafka
@@ -42,7 +45,7 @@ func main() {
 		if err != nil {
 			log.Println("Error sending message: ", err)
 		} else {
-			fmt.Println("Message sent: topic:", msg.Topic)
+			fmt.Println("Message sent: topic:", msg.Topic, "at ", timestamp)
 		}
 		i++
 		// Sleep for a while before sending next message
